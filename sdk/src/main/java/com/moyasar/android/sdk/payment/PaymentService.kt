@@ -1,5 +1,6 @@
 package com.moyasar.android.sdk.payment
 
+import android.util.Log
 import com.google.gson.Gson
 import com.moyasar.android.sdk.exceptions.ApiException
 import com.moyasar.android.sdk.extensions.postJson
@@ -28,6 +29,8 @@ class PaymentService(
         val response = client.postJson(request)
 
         if (response.statusCode !in 200..299) {
+            Log.e("ASQEW","${response.text}")
+            Log.e("ASQEW","$request")
             throw ApiException(
                 gson.fromJson(response.text, ErrorResponse::class.java)
             )

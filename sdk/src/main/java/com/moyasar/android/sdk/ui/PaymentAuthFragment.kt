@@ -4,8 +4,7 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.support.annotation.RequiresApi
-import android.support.v4.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,21 +13,27 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ProgressBar
+import androidx.annotation.RequiresApi
+import androidx.core.os.bundleOf
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import com.moyasar.android.sdk.MoyasarPaymentActivity
+import com.moyasar.android.sdk.PaymentResult
 import com.moyasar.android.sdk.R
-import com.moyasar.android.sdk.data.PaymentSheetViewModel
-import com.moyasar.android.sdk.data.SharedPaymentViewModelHolder
-import com.moyasar.android.sdk.databinding.FragmentPaymentAuthBinding
+import com.moyasar.android.sdk.data.GsonHolder
+import com.moyasar.android.sdk.data.PaymentAuthFragmentViewModel
+import com.moyasar.android.sdk.payment.models.Payment
 
 @SuppressLint("SetJavaScriptEnabled")
-internal class PaymentAuthFragment : Fragment() {
+class PaymentAuthFragment : Fragment() {
 
-    private val viewModel: PaymentSheetViewModel = SharedPaymentViewModelHolder.sharedViewModel
+    private val viewModel: PaymentAuthFragmentViewModel by viewModels()
 
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
 
     private val authUrl: String? by lazy {
-        viewModel.payment.value?.getCardTransactionUrl()
+        viewModel.payment.getCardTransactionUrl()
     }
 
     private val webViewClient by lazy {
@@ -80,15 +85,14 @@ internal class PaymentAuthFragment : Fragment() {
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        val binding = FragmentPaymentAuthBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
+        val view = inflater.inflate(R.layout.fragment_payment_auth, container, false)
 
-        webView = binding.webView
+        webView = view.findViewById(R.id.webView)
         webView.settings.domStorageEnabled = true
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = webViewClient
 
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -103,7 +107,7 @@ internal class PaymentAuthFragment : Fragment() {
         val url = authUrl
 
         if (url.isNullOrBlank()) {
-            viewModel.onPaymentAuthReturn(AuthResult.Failed("Missing Payment 3DS Auth URL."))
+            onPaymentResult(viewModel.getPaymentResult(AuthResult.Failed("Missing Payment 3DS Auth URL.")))
             return
         }
 
@@ -116,7 +120,7 @@ internal class PaymentAuthFragment : Fragment() {
             val status = url.getQueryParameter("status") ?: ""
             val message = url.getQueryParameter("message") ?: ""
 
-            viewModel.onPaymentAuthReturn(AuthResult.Completed(id, status, message))
+            onPaymentResult(viewModel.getPaymentResult(AuthResult.Completed(id, status, message)))
 
             return true;
         }
@@ -125,7 +129,11 @@ internal class PaymentAuthFragment : Fragment() {
     }
 
     private fun onReceivedError(error: String?) {
-        viewModel.onPaymentAuthReturn(AuthResult.Failed(error))
+        onPaymentResult(viewModel.getPaymentResult(AuthResult.Failed(error)))
+    }
+
+    private fun onPaymentResult(result: PaymentResult) {
+        (activity as? MoyasarPaymentActivity)?.onPaymentResult(result)
     }
 
     sealed class AuthResult {
@@ -139,5 +147,14 @@ internal class PaymentAuthFragment : Fragment() {
     companion object {
         const val RETURN_HOST = "sdk.moyasar.com";
         const val RETURN_URL = "https://${RETURN_HOST}/payment/return"
+
+        internal const val ARG_PAYMENT = "arg-payment"
+
+        fun newInstance(payment: Payment): PaymentAuthFragment {
+            return PaymentAuthFragment().apply {
+                arguments = bundleOf(ARG_PAYMENT to GsonHolder.gson.toJson(payment))
+            }
+        }
+
     }
 }

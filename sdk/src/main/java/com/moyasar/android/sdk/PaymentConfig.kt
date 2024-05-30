@@ -1,6 +1,7 @@
 package com.moyasar.android.sdk;
 
 import android.os.Parcelable
+import com.google.gson.Gson
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

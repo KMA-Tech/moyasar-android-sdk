@@ -1,30 +1,33 @@
 package com.moyasar.android.sdk.data
 
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 
 typealias Predicate = (value: String?) -> Boolean
 
-class LiveDataValidator(private val liveData: LiveData<String>) {
+class FieldValidator(private val value: () -> String?) {
     private val rules = mutableListOf<ValidationRule>()
 
     val error = MutableLiveData<String?>()
 
     fun isValid(): Boolean {
+        return validate(value.invoke()) == null
+    }
+
+    fun validate(value: String?): String? {
         for (rule in rules) {
-            if (rule.predicate(liveData.value)) {
+            if (rule.predicate(value)) {
                 error.value = rule.error
-                return false
+                return rule.error
             }
         }
 
         error.value = null
-        return true
+        return error.value
     }
 
     fun isValidWithoutErrorMessage(): Boolean {
         for (rule in rules) {
-            if (rule.predicate(liveData.value)) {
+            if (rule.predicate(value.invoke())) {
                 return false
             }
         }

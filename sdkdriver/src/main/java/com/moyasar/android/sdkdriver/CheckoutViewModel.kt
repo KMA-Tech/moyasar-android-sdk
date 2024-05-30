@@ -1,8 +1,8 @@
 package com.moyasar.android.sdkdriver
 
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.ViewModel
 import android.os.Parcelable
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import com.moyasar.android.sdk.PaymentConfig
 import com.moyasar.android.sdk.PaymentResult
 import com.moyasar.android.sdk.extensions.default
@@ -40,10 +40,12 @@ class CheckoutViewModel : ViewModel() {
                 status.value = Status.Failed(Exception("User canceled"))
                 println("User canceled")
             }
+
             is PaymentResult.Failed -> {
                 status.value = Status.Failed(Exception("Payment failed"))
                 println("Payment failed: ${result.error}")
             }
+
             is PaymentResult.Completed -> {
                 payment.value = result.payment
                 println("Payment: ${result.payment}")
@@ -51,11 +53,13 @@ class CheckoutViewModel : ViewModel() {
                 when (result.payment.status) {
                     "paid", "authorized" -> status.value = Status.Success
                     else -> {
-                        status.value = Status.Failed(Exception("Payment status isn't paid or authorized"))
+                        status.value =
+                            Status.Failed(Exception("Payment status isn't paid or authorized"))
                         println("Payment status isn't 'paid' or 'authorized', it's: '${result.payment.status}'")
                     }
                 }
             }
+
             is PaymentResult.CompletedToken -> {
                 println("Got newly created token: '${result.token.id}'")
             }
@@ -65,7 +69,7 @@ class CheckoutViewModel : ViewModel() {
     fun beginDonation(activity: CheckoutActivity, id: Int) {
         this.activity = activity
 
-        this.paymentFragment = PaymentFragment.newInstance(activity.application, config) { this.onPaymentSheetResult(it) }
+        this.paymentFragment = PaymentFragment.newInstance(config)
 
         activity.supportFragmentManager.beginTransaction().apply {
             replace(id, paymentFragment)

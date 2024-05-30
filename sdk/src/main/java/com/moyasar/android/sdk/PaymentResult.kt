@@ -5,6 +5,7 @@ import com.moyasar.android.sdk.payment.models.Payment
 import com.moyasar.android.sdk.payment.models.Token
 import kotlinx.parcelize.Parcelize
 
+@Parcelize
 sealed class PaymentResult : Parcelable {
     @Parcelize
     data class Completed(val payment: Payment) : PaymentResult()
